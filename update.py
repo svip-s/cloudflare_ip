@@ -13,6 +13,8 @@ TCP_TIMEOUT = float(os.getenv("TCP_TIMEOUT", 1.5))
 # 测速引擎配置
 SPEED_WORKERS = int(os.getenv("SPEED_WORKERS", 12))
 SPEED_TIMEOUT = float(os.getenv("SPEED_TIMEOUT", 6.0))
+# 引入缓冲区参数，默认为 16.0 秒
+SPEED_PROCESS_BUFFER = float(os.getenv("SPEED_PROCESS_BUFFER", 16.0))
 MIN_SPEED_MBPS = float(os.getenv("MIN_SPEED", 8.0))
 
 # 数量控制
@@ -24,7 +26,6 @@ DOWNLOAD_TIMEOUT = float(os.getenv("DOWNLOAD_TIMEOUT", 60.0))
 INPUT_URL = os.getenv("INPUT_URL")
 
 if not INPUT_URL:
-    # 发现没配置，直接打印错误并退出，不给任何默认值
     print("\n" + "!"*40)
     print("❌ 严重错误: 检测到 .env 配置失效或缺少 INPUT_URL！")
     print("💡 为了防止运行偏离预期，程序已自动终止。")
@@ -88,7 +89,8 @@ def measure_speed(node: Node):
            "--resolve", f"{SPEED_DOMAIN}:{node.port}:{node.ip}",
            "--connect-timeout", "3", "--max-time", str(SPEED_TIMEOUT), "--insecure", url]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=SPEED_TIMEOUT + 2)
+        # 使用 SPEED_TIMEOUT + SPEED_PROCESS_BUFFER 作为进程级的物理死线
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=SPEED_TIMEOUT + SPEED_PROCESS_BUFFER)
         size, t = res.stdout.strip().split()
         return round((float(size) * 8) / (float(t) * 1_000_000), 2)
     except: return 0.0
@@ -115,7 +117,7 @@ async def main():
     await asyncio.gather(*(task(n) for n in nodes))
     pbar.close()
 
-    # 2. 分组筛选（每个地区取延迟最低的 TOP_PER_REGION）
+    # 2. 分组筛选
     groups = defaultdict(list)
     for n, lat in tcp_results: groups[n.region].append((n, lat))
     candidates = []
@@ -149,7 +151,6 @@ async def main():
                 f2.write(line)
                 fast_count += 1
 
-    # --- 最终精细化战报 ---
     duration = int(time.time() - start_time)
     print(f"✨ 优选任务完成！总耗时: {duration}s")
     print(f"📊 节点总数: {total_nodes}")
