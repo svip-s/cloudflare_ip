@@ -7,11 +7,11 @@ from tqdm import tqdm
 
 # --- 核心：从环境变量加载所有精细化参数 ---
 # 延迟测试配置
-TCP_WORKERS = int(os.getenv("TCP_WORKERS", 800))
+TCP_WORKERS = int(os.getenv("TCP_WORKERS", 400))
 TCP_TIMEOUT = float(os.getenv("TCP_TIMEOUT", 1.5))
 
 # 测速引擎配置
-SPEED_WORKERS = int(os.getenv("SPEED_WORKERS", 16))
+SPEED_WORKERS = int(os.getenv("SPEED_WORKERS", 12))
 SPEED_TIMEOUT = float(os.getenv("SPEED_TIMEOUT", 10.0))
 MIN_SPEED_MBPS = float(os.getenv("MIN_SPEED", 8.0))
 
