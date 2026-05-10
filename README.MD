@@ -1,9 +1,8 @@
-
 # Cloudflare 优选 IP
 
 **测试地**: 中国陕西移动  
 **更新频率**: 每小时更新一次  
-**本次更新**: 2026-05-11 01:01:17
+**本次更新**: 2026-05-11 03:46:19
 
 ## 订阅链接
 **Cloudflare R2 订阅连接（推荐）**：
@@ -67,9 +66,9 @@ https://raw.githubusercontent.com/svip-s/cloudflare_ip/refs/heads/main/domain.tx
 
 ---
 ## 脚本使用方法
-### 安卓端 Termux
+### Linux/Termux(Android)
 
-> ⚠️ 注意： 运行脚本进行测速时，请务必关闭手机上的 VPN 或代理工具，否则测出的是代理服务器的速度，而非你本地直连 Cloudflare 的真实速度。
+> ⚠️ 注意： 运行脚本进行测速时，请务必关闭设备上的 VPN 或代理工具，否则测出的是代理服务器的速度，而非你本地直连 Cloudflare 的真实速度。
 
 * **系统设置**：安装 Termux，关闭电池优化或设置省电策略为无限制，确保应用可以保持后台运行而不中断。
 * **唤醒锁定**： 在 Termux 下拉通知栏点击 Acquire wakelock，防止休眠测速中断。
@@ -122,52 +121,115 @@ termux-setup-storage
   - 启动命令：
 
 ```bash
-python update.py --no-github-sync
+bash ~/cloudflare_ip/auto.sh local
 ```
 
   - 查看高速优选：
 
 ```bash
-cat best_ips.txt
+cat ~/cloudflare_ip/best_ips.txt
 ```
 
   - 查看所有可用：
 
 ```bash
-cat full_ips.txt
+cat ~/cloudflare_ip/full_ips.txt
 ```
 
 #
 **测速并上传 GitHub**：
 
-> 在 GitHub 设置中生成一个 Personal Access Token (classic)，确保勾选了 repo 权限。
+一、 在 GitHub 设置中生成一个 Personal Access Token (classic)，确保勾选了 repo 权限。
 
-  - 编辑配置文件：
+二、 编辑配置文件：
 
 ```bash
-nano linux_start.sh
+nano ~/cloudflare_ip/.env
 ```
 
 ```bash
-# 需要修改的内容
-export GITHUB_TOKEN="你的_ghp_开头的Token"
-export GITHUB_REPO="你的仓库HTTPS链接"
+# --- GitHub 配置 ---
+GH_TOKEN="ghp_Token..."
+GH_REPO="https://github.com/用户名/仓库名.git"
 ```
+
+三、 订阅链接
+
+  - 你需要在 GitHub 创建一个新仓库，名称自己设置，成功后订阅链接就是：
+
+    - 高速优选：https://raw.githubusercontent.com/用户名/仓库名/refs/heads/main/best_ips.txt
+    
+    - 所有可用：https://raw.githubusercontent.com/用户名/仓库名/refs/heads/main/full_ips.txt
+
+#
+**Cloudflare R2 存储上传**：
+
+> 由于国内网络原因，有些地区可能使用 GitHub 的上传方式很不稳定，有时候失败，有时候成功，如果你可以忍受 GitHub 的不稳定，或者你的地区 GitHub 上传很稳定确实没问题，或者你不想再麻烦，完成上面的步骤就可以了。
+
+> 很不幸的是，我所在的地区就是很不稳定的情况，然后我们可以利用上传到 Cloudflare R2 存储来实现同样的效果，然后复制出订阅连接
+，R2 相较于 GitHub 效果更好，服务稳定，不怕上传失败，也不怕被阻断劫持或是被墙，更新也更及时。
+
+一、 核心参数准备 (CF 后台)
+
+从 Cloudflare 控制台获取以下 4 个“通关密码”：
+
+  - ACCOUNT_ID：
+
+    - 在 Cloudflare 首页右侧“API”区块复制或者去 Workers 和 Pages 页面。
+
+  - BUCKET_NAME：
+
+    - 在 R2 页面创建的存储桶，就是你设置的名称，保持默认创建就行。
+
+  - ACCESS_KEY 和 SECRET_KEY：
+
+    - 进入 R2 -> 点击 API 令牌的管理。
+
+    - 然后帐户 API 令牌点击创建 Account API 令牌。权限选：第一个管理员读写，点击创建。
+
+    - 创建后保存好弹出的 访问密钥 ID 和 机密访问密钥，最好截图或者保存弹出的所有内容，因为网页刷新或者关闭重新打开就再也看不到令牌值了。
+
+二、 本地环境配置 (Termux)
+
+在 Termux 中运行以下命令，确保拥有上传能力：
+
+```bash
+pip install tqdm boto3
+```
+
+三、 编辑配置文件：
+
+```bash
+nano ~/cloudflare_ip/.env
+```
+
+```bash
+# --- Cloudflare R2 配置 ---
+ACCOUNT_ID="账户 ID"
+ACCESS_KEY="访问密钥 ID"
+SECRET_KEY="机密访问密钥"
+BUCKET_NAME="存储桶名称"
+```
+
+四、 订阅链接
+
+  - 点击刚才创建的 R2 存储桶的设置，然后找到自定义域，添加一个域名比如：ips.de5.net，那么订阅地址就是：
+  
+    - 高速优选：https://ips.de5.net/best_ips.txt
+    
+    - 所有可用：https://ips.de5.net/full_ips.txt
+
 
   - 脚本启动：
 
 ```bash
-bash linux_start.sh
-```
-
-    ---或---
-
-```bash
-./linux_start.sh
+bash ~/cloudflare_ip/auto.sh
 ```
 
 #
 **定时任务**：
+
+> 一定确保系统设置中的‘后台运行’权限和‘电池无限制’，否则有很大概率会不起作用。
 
 一、安装 cron 服务和后台服务管理工具
 
@@ -209,109 +271,7 @@ sv up crond
 sv down crond
 ```
 
-三、编写一个简单的启动脚本 (auto.sh)：
-
-因为脚本运行需要模拟输入，在 cloudflare_ip 目录下建个 auto.sh：
-
-```bash
-nano auto.sh
-```
-
-粘贴以下代码保存：
-
-```bash
-#!/bin/bash
-
-# 核心环境变量声明
-export PATH=/data/data/com.termux/files/usr/bin:$PATH
-
-# 启动 Termux 唤醒锁
-termux-wake-lock
-
-# 1. 进入项目目录
-cd /data/data/com.termux/files/home/cloudflare_ip
-
-# --- [Telegram 机器人配置] ---
-TG_PROXY_DOMAIN="你创建的 Workers 代理域名"
-TG_TOKEN="你的机器人 Token"
-TG_CHAT_ID="你的 Chat ID"
-# --------------------
-
-# --- [任务时间] ---
-echo "===================================================="
-echo "任务启动时间: $(date '+%Y-%m-%d %H:%M:%S')"
-echo "===================================================="
-
-# 2. 环境清理
-rm -f .git/index.lock
-pkill -9 git 2>/dev/null
-pkill -9 ssh 2>/dev/null
-git gc --prune=now 2>/dev/null
-rm -f best_ips.txt full_ips.txt
-
-# 3. 设置重试参数
-MAX_RETRIES=3
-RETRY_COUNT=0
-
-# 4. 开始循环尝试
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    
-    echo "[$(date '+%H:%M:%S')] 正在进行第 $RETRY_COUNT 次运行尝试..."
-
-    # 运行主脚本 (2表示选择“测速并上传”)
-    bash linux_start.sh <<EOF
-2
-EOF
-
-    # 检查主脚本的退出状态码
-    if [ $? -eq 0 ]; then
-        # --- [提取最快 IP] ---
-        TOP_IP=$(head -n 1 best_ips.txt | awk '{print $1}')
-        
-        echo "----------------------------------------------------"
-        echo "✅ [$(date '+%Y-%m-%d %H:%M:%S')] 脚本运行并上传成功。"
-        echo "===================================================="
-        
-        # --- [成功通知] ---
-        MSG="🚀 *GitHub 同步成功* %0A🔥 最快 IP：\`$TOP_IP\` %0A⏰ 时间：$(date '+%H:%M:%S')"
-        curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_TOKEN}/sendMessage" \
-             -d "chat_id=${TG_CHAT_ID}" \
-             -d "text=${MSG}" \
-             -d "parse_mode=Markdown" > /dev/null
-             
-        exit 0
-    else
-        echo "❌ [$(date '+%H:%M:%S')] 哎呀，第 $RETRY_COUNT 次尝试失败。"
-        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-            echo "等待 60 秒后进行下一次重试..."
-            sleep 60
-        else
-            echo "‼️ [$(date '+%Y-%m-%d %H:%M:%S')] 任务在尝试 $MAX_RETRIES 次后彻底失败。"
-            echo "===================================================="
-            
-            # --- [彻底失败通知] ---
-            FAIL_MSG="‼️ *GitHub 同步彻底失败* %0A❌ 经过 $MAX_RETRIES 次重试仍未成功。 %0A⏰ 时间：$(date '+%H:%M:%S')"
-            curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_TOKEN}/sendMessage" \
-                 -d "chat_id=${TG_CHAT_ID}" \
-                 -d "text=${FAIL_MSG}" \
-                 -d "parse_mode=Markdown" > /dev/null
-                 
-            exit 1
-        fi
-    fi
-done
-```
-
-> 代码设置了循环，如果上传失败说明可能网络波动，会重新尝试运行，默认3次。
-
-四、赋予脚本执行权限：
-
-```bash
-chmod +x auto.sh
-```
-
-五、设置定时任务：
+三、设置定时任务：
 
 ```bash
 crontab -e
@@ -367,204 +327,13 @@ sv status crond
 run: crond: (pid XXX) Xs; run: log: (pid XXX) Xs
 ```
 
-六、验证是否配置成功？
+四、验证是否配置成功？
 
-```bash
-bash ~/cloudflare_ip/auto.sh
-```
-
-如果成功上传到 GitHub 则表示配置成功。
+等待你设置的时间，如果成功运行，并出现日志文件，表示自动任务已经成功，然后查看日志进行确认运行过程中没有问题。
 
 > ⚠️ 注意： 由于安卓系统会杀后台，你需要确保 Termux 开启了 Acquire wakelock（下拉通知栏那个），并且在系统设置里把 Termux 设为电池优化“无限制”。
 
 > 建议可以使用家里的旧手机进行部署，由于 CPU 进行大规模测速（测速是非常耗电的，因为涉及高频的网络吞吐和 CPU 计算），手机电量掉得会比较快。如果你不介意耗电也可以在你常用的安卓设备或手机部署安装。
-
-#
-**Cloudflare R2 存储上传**：
-
-> 由于国内网络原因，有些地区可能使用 GitHub 的上传方式很不稳定，有时候失败，有时候成功，如果你可以忍受 GitHub 的不稳定，或者你的地区 GitHub 上传很稳定确实没问题，完成上面的步骤就可以了。
-
-> 很不幸的是，我所在的地区就是很不稳定的情况，然后我们可以利用上传到 Cloudflare R2 存储来实现同样的效果，然后复制出订阅连接
-，R2 相较于 GitHub 效果更好，不怕上传失败，更新更及时。
-
-一、 核心参数准备 (CF 后台)
-
-从 Cloudflare 控制台获取以下 4 个“通关密码”：
-
-  - ACCOUNT_ID：
-
-    - 在 Cloudflare 首页右侧“API”区块复制或者去 Workers 和 Pages 页面。
-
-  - BUCKET_NAME：
-
-    - 在 R2 页面创建的存储桶，就是你设置的名称，保持默认创建就行。
-
-  - ACCESS_KEY 和 SECRET_KEY：
-
-    - 进入 R2 -> 点击 API 令牌的管理。
-
-    - 然后帐户 API 令牌点击创建 Account API 令牌。权限选：第一个管理员读写，点击创建。
-
-    - 创建后保存好弹出的 访问密钥 ID 和 机密访问密钥，最好截图或者保存弹出的所有内容，因为网页刷新或者关闭重新打开就再也看不到令牌值了。
-
-二、 本地环境配置 (Termux)
-
-在 Termux 中运行以下命令，确保拥有上传能力：
-
-```bash
-pip install tqdm boto3
-```
-
-三、 修改或直接创建启动脚本 (auto.sh)：
-
-```bash
-cd cloudflare_ip
-```
-
-```bash
-nano auto.sh
-```
-
-粘贴以下代码，如果有内容，全部删除然后粘贴保存，或者退出直接删除 auto.sh 重新创建也行，新建一定要确保赋予脚本执行权限。
-
-```bash
-#!/bin/bash
-
-# 核心环境变量声明
-export PATH=/data/data/com.termux/files/usr/bin:$PATH
-
-# 启动 Termux 唤醒锁
-termux-wake-lock
-
-# 1. 进入项目目录
-cd /data/data/com.termux/files/home/cloudflare_ip
-
-# --- [Cloudflare R2 参数配置] ---
-ACCOUNT_ID="你的账户 ID"
-ACCESS_KEY="你的访问密钥 ID"
-SECRET_KEY="你的机密访问密钥"
-BUCKET_NAME="你的桶名"
-
-# --- [Telegram 机器人配置] ---
-TG_PROXY_DOMAIN="你创建的 Workers 代理域名"
-TG_TOKEN="你的机器人 Token"
-TG_CHAT_ID="你的 Chat ID"
-# --------------------
-
-# --- [任务时间] ---
-echo "===================================================="
-echo "任务启动时间: $(date '+%Y-%m-%d %H:%M:%S')"
-echo "===================================================="
-
-# 2. 环境清理
-rm -f .git/index.lock
-pkill -9 git 2>/dev/null
-rm -f best_ips.txt full_ips.txt
-
-# 3. 运行测速
-echo "[$(date '+%H:%M:%S')] 正在进行本地测速..."
-bash linux_start.sh <<EOF
-2
-EOF
-
-# 4. 针对 R2 的专项上传循环 (重试 3 次)
-if [ -f "best_ips.txt" ]; then
-    # --- [提取最快 IP] ---
-    TOP_IP=$(head -n 1 best_ips.txt | awk '{print $1}')
-    
-    MAX_R2_RETRIES=3
-    R2_RETRY_COUNT=0
-    
-    while [ $R2_RETRY_COUNT -lt $MAX_R2_RETRIES ]; do
-        R2_RETRY_COUNT=$((R2_RETRY_COUNT + 1))
-        echo "[$(date '+%H:%M:%S')] 正在尝试同步 R2 (第 $R2_RETRY_COUNT 次)..."
-
-        python3 - <<EOF
-import boto3
-from botocore.config import Config
-import os, sys
-
-files_to_upload = ["best_ips.txt", "full_ips.txt"]
-
-try:
-    s3 = boto3.client(
-        service_name="s3",
-        endpoint_url="https://${ACCOUNT_ID}.r2.cloudflarestorage.com",
-        aws_access_key_id="${ACCESS_KEY}",
-        aws_secret_access_key="${SECRET_KEY}",
-        region_name="auto",
-        config=Config(s3={'addressing_style': 'path'})
-    )
-    
-    for file_name in files_to_upload:
-        # 核心逻辑：如果文件不存在，直接报错，触发异常处理
-        if not os.path.exists(file_name):
-            raise FileNotFoundError(f"关键结果文件 {file_name} 丢失，测速可能未成功！")
-        
-        s3.upload_file(file_name, "${BUCKET_NAME}", file_name)
-        print(f"✅ {file_name} 已成功上传至 R2")
-
-    sys.exit(0)
-except Exception as e:
-    print(f"❌ R2 同步过程出错: {str(e)}")
-    sys.exit(1)
-EOF
-
-        if [ $? -eq 0 ]; then
-            echo "✅ [$(date '+%H:%M:%S')] R2 同备圆满完成！"
-            echo "===================================================="
-            
-            # --- [成功通知] ---
-            MSG="🚀 *R2 优选同步成功* %0A🔥 最快 IP：\`$TOP_IP\` %0A⏰ 时间：$(date '+%H:%M:%S')"
-            curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_TOKEN}/sendMessage" \
-                 -d "chat_id=${TG_CHAT_ID}" \
-                 -d "text=${MSG}" \
-                 -d "parse_mode=Markdown" > /dev/null
-            
-            exit 0
-        else
-            echo "❌ [$(date '+%H:%M:%S')] R2 忙碌中，60秒后重试..."
-            sleep 60
-        fi
-    done
-    
-    # --- [R2 彻底失败通知] ---
-    FAIL_MSG="‼️ *R2 同步彻底失败* %0A❌ 经过 $MAX_R2_RETRIES 次重试仍未成功。 %0A⏰ 时间：$(date '+%H:%M:%S')"
-    curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_TOKEN}/sendMessage" \
-         -d "chat_id=${TG_CHAT_ID}" \
-         -d "text=${FAIL_MSG}" \
-         -d "parse_mode=Markdown" > /dev/null
-         
-    echo "===================================================="
-    exit 1
-else
-    # --- [测速失败通知] ---
-    curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_TOKEN}/sendMessage" \
-         -d "chat_id=${TG_CHAT_ID}" \
-         -d "text=❌ R2 任务异常：未检测到测速结果文件！" \
-         -d "parse_mode=Markdown" > /dev/null
-
-    echo "❌ [$(date '+%H:%M:%S')] 未检测到测速结果。"
-    echo "===================================================="
-    exit 1
-fi
-```
-
-如果运行失败或者不确定有没有赋予脚本执行权限，可以尝试多运行一次权限设定命令：
-
-```bash
-chmod +x auto.sh
-```
-
-> 脚本会运行测试，忽略 GitHub 的上传错误（能成就成，不成就忽略），然后向 R2 进行上传，GitHub 上传随缘，R2 设置了失败默认3次循环。正常情况下 R2 是最稳的，几乎不会失败。
-
-四、 订阅链接
-
-  - 点击刚才创建的 R2 存储桶的设置，然后找到自定义域，添加一个域名比如：ips.de5.net，那么订阅地址就是：
-  
-    - 高速优选：https://ips.de5.net/best_ips.txt
-    
-    - 所有可用：https://ips.de5.net/full_ips.txt
 
 #
 **设定一个 Telegram 通知机器人（可选）**
@@ -640,7 +409,18 @@ export default {
 
 4. 部署完成后，绑定一个域名，点击设置，然后看到 域和路由 点右边的添加，用来添加域名，例如：tg.de5.net
 
-5. 填入上面我们创建的 auto.sh 设置中，确保 “TG_PROXY_DOMAIN” “TG_TOKEN”“TG_CHAT_ID” 三项填写正确。
+5. 编辑配置文件：
+
+```bash
+nano ~/cloudflare_ip/.env
+```
+
+```bash
+# --- Telegram 通知配置 ---
+TG_TOKEN="你创建的机器人 Token"
+TG_CHAT_ID="你的自己或者频道的 Chat ID"
+TG_PROXY_DOMAIN="你创建的 Workers 代理域名"
+```
 
 6. 运行 auto.sh 进行测试。
 
@@ -649,7 +429,71 @@ bash ~/cloudflare_ip/auto.sh
 ```
 
 #
+**创建桌面手动快捷方式启动（可选）**
+
+> 如果你不想搞自动化，或是想随心所欲的手动控制，但是又得老是输入指令，嫌麻烦，这个方法可以解决。
+
+步骤：
+
+1. 下载安装 Termux:Widget 插件（注意：必须和 Termux 本体的安装来源一致）。
+
+2. 回到桌面，在桌面找到安装或添加桌面小部件的选项（一般长按桌面），找到 Termux:Widget，添加小部件。
+
+3. 在 Termux 里创建快捷方式目录：
+
+```bash
+mkdir -p ~/.shortcuts/
+```
+
+4. 在该目录下创建一个脚本文件（比如：叫 只检测不上传.sh）：
+
+```bash
+nano ~/.shortcuts/只检测不上传.sh
+```
+
+5. 写入下面命令：
+
+```bash
+#!/bin/bash
+bash ~/cloudflare_ip/auto.sh local
+```
+
+6. 给脚本执行权限：
+
+```bash
+chmod +x ~/.shortcuts/只检测不上传.sh
+```
+
+7. 回到桌面，点击小部件右边的刷新就会出现文件，然后点击脚本文件就直接运行，实现快捷启动。
+
+8. 你还可以定义其它快捷方式，比如：
+
+```bash
+#!/bin/bash
+# 手动检测并上传
+bash ~/cloudflare_ip/auto.sh
+```
+
+```bash
+#!/bin/bash
+# 查看高速优选
+cat ~/cloudflare_ip/best_ips.txt
+```
+
+```bash
+#!/bin/bash
+# 查看自动任务日志
+cat ~/cloudflare_ip/cron_log.log
+```
+
+```bash
+等等…
+```
+
+#
 **开机后台启动 Termux 运行自动自动任务（可选）**
+
+> 实现重启开机后自动启动运行自动任务，不用手动去打开 Termux，实现彻底自动化。
 
 步骤：
 
@@ -707,81 +551,9 @@ chmod +x ~/.termux/boot/start-cron.sh
 | **domain.txt** | 优选域名 |
 
 ---
-### 电脑端 (Windows)
+## 灵感和参考
 
-> 适合在本地电脑快速测速，或利用电脑闲置带宽更新仓库。
-
-一、**环境准备**：
-
-  - 安装 [Python 3.x](https://www.python.org/)（安装时务必勾选 **Add Python to PATH**）。
-
-  - 安装 [Git for Windows](https://git-scm.com/)。
-
-二、**下载项目**：
-
-  - 在文件夹空白处右键选择 `Git Bash Here`，输入：
-
-```bash
-git clone [https://github.com/svip-s/cloudflare_ip.git](https://github.com/svip-s/cloudflare_ip.git)
-cd cloudflare_ip
-```
-
-三、**运行脚本**：
-
-  - 只测速不上传：
-
-```bash
-python update.py --no-github-sync
-```
-
-  - 自动化同步：
-
-    - 编辑 win_start.ps1，填入你的 GITHUB_TOKEN 和 GITHUB_REPO。
-
-    - 右键点击 win_start.ps1，选择 “使用 PowerShell 运行”。
-
----
-### Linux 服务端 (Ubuntu/Debian/CentOS)
-
-> 适合部署在 VPS 服务器上，实现 24h 无人值守自动更新。
-
-一、**安装依赖** (以 Ubuntu 为例)：
-
-```bash
-sudo apt update && sudo apt install python3 python3-pip git -y
-pip3 install tqdm
-```
-
-二、**部署脚本**：
-
-```bash
-git clone [https://github.com/svip-s/cloudflare_ip.git](https://github.com/svip-s/cloudflare_ip.git)
-cd cloudflare_ip
-chmod +x *.sh *.py
-```
-
-三、**执行与自动化**：
-
-  - 手动运行：
-
-```bash
-bash linux_start.sh
-```
-
-  - 定时任务：
-
-    - 输入 crontab -e，添加以下内容（每天凌晨 4 点自动跑）：
- 
-```bash
-0 4 * * * cd /你的目录路径/cloudflare_ip && bash linux_start.sh <<EOF
-2
-EOF
-```
-
----
-## 代码来源
-
-仓库：[cfip](https://github.com/HandsomeMJZ/cfip)
+仓库：[cfip-tools](https://github.com/HandsomeMJZ/cfip-tools)
 
 作者：[俊臻是真俊](https://github.com/HandsomeMJZ)
 
