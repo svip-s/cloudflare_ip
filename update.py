@@ -12,7 +12,7 @@ TCP_TIMEOUT = float(os.getenv("TCP_TIMEOUT", 1.5))
 
 # 测速引擎配置
 SPEED_WORKERS = int(os.getenv("SPEED_WORKERS", 12))
-SPEED_TIMEOUT = float(os.getenv("SPEED_TIMEOUT", 10.0))
+SPEED_TIMEOUT = float(os.getenv("SPEED_TIMEOUT", 6.0))
 MIN_SPEED_MBPS = float(os.getenv("MIN_SPEED", 8.0))
 
 # 数量控制
@@ -20,6 +20,7 @@ MAX_NODES = int(os.getenv("MAX_NODES", 1000000)) # 默认全量
 TOP_PER_REGION = int(os.getenv("TOP_PER_REGION", 10))
 
 # 资源与文件配置
+DOWNLOAD_TIMEOUT = float(os.getenv("DOWNLOAD_TIMEOUT", 60.0))
 INPUT_URL = os.getenv("INPUT_URL")
 
 if not INPUT_URL:
@@ -50,7 +51,7 @@ def refresh_ips():
     print(f"IP 来源: {INPUT_URL}")
     try:
         req = urllib.request.Request(INPUT_URL, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=DOWNLOAD_TIMEOUT) as resp:
             if resp.status == 200:
                 INPUT_FILE.write_bytes(resp.read())
                 return True
