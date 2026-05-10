@@ -2,7 +2,7 @@
 
 **测试地**: 中国陕西移动  
 **更新频率**: 每小时更新一次  
-**本次更新**: 2026-05-11 06:02:48
+**本次更新**: 2026-05-11 07:02:51
 
 ## 订阅链接
 **Cloudflare R2 订阅连接（推荐）**：
@@ -69,6 +69,8 @@ https://raw.githubusercontent.com/svip-s/cloudflare_ip/refs/heads/main/domain.tx
 ### Linux/Termux(Android)
 
 > ⚠️ 注意： 运行脚本进行测速时，请务必关闭设备上的 VPN 或代理工具，否则测出的是代理服务器的速度，而非你本地直连 Cloudflare 的真实速度。
+
+> Linux 和 Termux 使用方法几乎没有区别，所以下面以 Termux 为例。
 
 * **系统设置**：安装 Termux，关闭电池优化或设置省电策略为无限制，确保应用可以保持后台运行而不中断。
 * **唤醒锁定**： 在 Termux 下拉通知栏点击 Acquire wakelock，防止休眠测速中断。
