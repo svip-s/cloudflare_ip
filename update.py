@@ -24,14 +24,11 @@ TOP_PER_REGION = int(os.getenv("TOP_PER_REGION", 10))
 # 资源与文件配置
 DOWNLOAD_TIMEOUT = float(os.getenv("DOWNLOAD_TIMEOUT", 60.0))
 INPUT_URL = os.getenv("INPUT_URL")
-
 if not INPUT_URL:
-    print("\n" + "!"*40)
     print("❌ 严重错误: 检测到 .env 配置失效或缺少 INPUT_URL！")
     print("💡 为了防止运行偏离预期，程序已自动终止。")
-    print("!"*40 + "\n")
     sys.exit(1)
-
+# 文件名
 INPUT_FILE = Path("ips.txt")
 BEST_OUTPUT = Path("best_ips.txt")
 FULL_OUTPUT = Path("full_ips.txt")
