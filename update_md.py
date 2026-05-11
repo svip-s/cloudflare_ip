@@ -7,7 +7,7 @@ import re
 README_PATH = Path(__file__).resolve().parent / "README.MD"
 
 if not README_PATH.exists():
-    raise SystemExit(f"README file not found: {README_PATH}")
+    raise SystemExit(f"未找到 README 文件：{README_PATH}")
 
 text = README_PATH.read_text(encoding="utf-8")
 updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -23,7 +23,7 @@ for line in lines:
         if not found:
             updated_lines.append(new_line)
             found = True
-        # skip duplicate 本次更新 lines
+
         continue
     updated_lines.append(line)
 
@@ -49,4 +49,4 @@ if not found:
 
 text = "\n".join(updated_lines).rstrip() + "\n"
 README_PATH.write_text(text, encoding="utf-8", newline="\n")
-print(f"Updated README timestamp to {updated_at}")
+print(f"已更新 README 时间戳为 {updated_at}")
