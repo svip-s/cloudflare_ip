@@ -122,5 +122,5 @@ curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_TOKEN}/sendMessage" \
      -d "parse_mode=Markdown" \
      -d "text=$MSG_TEXT" > /dev/null
 
-echo "✨ 以完成所有任务！"
+echo "✨ 已完成所有任务！"
 echo ""
