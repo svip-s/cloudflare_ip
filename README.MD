@@ -2,7 +2,7 @@
 
 **测试地**: 中国陕西移动  
 **更新频率**: 每小时更新一次  
-**本次更新**: 2026-05-11 10:02:53
+**本次更新**: 2026-05-11 11:02:52
 
 ## 订阅链接
 **Cloudflare R2 订阅连接（推荐）**：
@@ -478,18 +478,12 @@ bash ~/cloudflare_ip/auto.sh
 
 ```bash
 #!/bin/bash
-# 查看高速优选
-cat ~/cloudflare_ip/best_ips.txt
+# 其它命令
+...
 ```
 
 ```bash
-#!/bin/bash
-# 查看自动任务日志
-cat ~/cloudflare_ip/cron_log.log
-```
-
-```bash
-等等…
+...
 ```
 
 #
