@@ -66,11 +66,11 @@ https://raw.githubusercontent.com/svip-s/cloudflare_ip/refs/heads/main/domain.tx
 
 ---
 ## 脚本使用方法
-### Linux/Termux(Android)
+### Linux/Termux(Android)/Git(Windows)
 
 > ⚠️ 注意： 运行脚本进行测速时，请务必关闭设备上的 VPN 或代理工具，否则测出的是代理服务器的速度，而非你本地直连 Cloudflare 的真实速度。
 
-> Linux 和 Termux 使用方法几乎没有区别，所以下面以 Termux 为例。
+> Linux/Termux(Android)/Git(Windows)这三种平台的使用方法几乎大相径庭，所以下面以 Termux 为例，其它平台如果不会使用可以咨询 AI，因为代码并不复杂，只要有仓库里的核心脚本在，基本上都很简单，Windows 有一点不一样的是换行符长得不一样（CRLF vs LF），可以使用 VS Code 或 Notepad++ 打开 auto.sh，把右下角的换行模式从 CRLF 改成 LF 再保存，自动任务也可以使用 .bat 批处理文件实现。
 
 * **系统设置**：安装 Termux，关闭电池优化或设置省电策略为无限制，确保应用可以保持后台运行而不中断。
 * **唤醒锁定**： 在 Termux 下拉通知栏点击 Acquire wakelock，防止休眠测速中断。
@@ -457,6 +457,7 @@ nano ~/.shortcuts/只检测不上传.sh
 
 ```bash
 #!/bin/bash
+termux-wake-lock
 bash ~/cloudflare_ip/auto.sh local
 ```
 
@@ -473,6 +474,7 @@ chmod +x ~/.shortcuts/只检测不上传.sh
 ```bash
 #!/bin/bash
 # 手动检测并上传
+termux-wake-lock
 bash ~/cloudflare_ip/auto.sh
 ```
 
