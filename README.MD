@@ -2,7 +2,7 @@
 
 **测试地**: 中国陕西移动
 **更新频率**: 下午两点到凌晨两点，每小时更新一次
-**本次更新**: 2026-05-12 20:04:06
+**本次更新**: 2026-05-12 21:04:05
 
 ## 订阅链接
 **Cloudflare R2 订阅连接（推荐）**：
@@ -151,7 +151,7 @@ nano ~/cloudflare_ip/.env
 
 ```bash
 # --- GitHub 配置 ---
-GH_TOKEN="ghp_Token..."
+GH_TOKEN="ghp_token..."
 GH_REPO="https://github.com/用户名/仓库名.git"
 ```
 
