@@ -72,14 +72,14 @@ GH_SUCCESS=true
 
 for FILE in "${FILES[@]}"; do
     if [ ! -f "$FILE" ]; then continue; fi
-    
+
     # A. 获取文件的当前 SHA (如果是新文件会返回空)
     SHA=$(curl -s -H "Authorization: token $GH_TOKEN" \
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE" | grep '"sha":' | cut -d'"' -f4)
-    
+
     # B. Base64 编码本地内容
     CONTENT=$(base64 -w 0 "$FILE")
-    
+
     # C. 调用 API 更新
     RESPONSE=$(curl -s -X PUT -H "Authorization: token $GH_TOKEN" \
         -d "{
@@ -103,7 +103,7 @@ else
     GH_MSG="❌ 失败 (API 模式)"
 fi
 
-# 7. Telegram 通知
+# 7. Telegram Bot 通知
 MSG_TEXT="🚀 *Cloudflare 优选战报*
 ----------------------------
 🏆 *最快 IP*: \`$TOP_IP\`
@@ -113,7 +113,7 @@ MSG_TEXT="🚀 *Cloudflare 优选战报*
 ----------------------------
 ✨ _所有 IP 已同步至云端_"
 
-curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_TOKEN}/sendMessage" \
+curl -s -X POST "https://${TG_PROXY_DOMAIN}/bot${TG_BOT_TOKEN}/sendMessage" \
      -d "chat_id=${TG_CHAT_ID}" \
      -d "parse_mode=Markdown" \
      -d "text=$MSG_TEXT" > /dev/null
