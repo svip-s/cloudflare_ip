@@ -2,7 +2,7 @@
 
 **测试地**: 中国陕西移动  
 **更新频率**: 下午两点到凌晨两点，每小时更新一次  
-**本次更新**: 2026-05-13 22:05:15
+**本次更新**: 2026-05-14 00:48:19
 
 ## 订阅链接
 **Cloudflare R2 订阅连接（推荐）**：
@@ -68,7 +68,7 @@ https://raw.githubusercontent.com/svip-s/cloudflare_ip/refs/heads/main/domain.tx
 ## 脚本使用方法
 ### Linux/Termux(Android)/Git(Windows)
 
-> ⚠️ 注意： 运行脚本进行测速时，请务必关闭设备上的 VPN 或代理工具，否则测出的是代理服务器的速度，而非你本地直连 Cloudflare 的真实速度。
+> ⚠️ 注意： 运行脚本进行测速时，请务必关闭设备上的 VPN 或代理工具，或者将环境隔离出代理，例如安卓端可以在代理软件开启分应用代理，排除 Termux，否则测出的是代理服务器的速度，而非你本地直连 Cloudflare 的真实速度。
 
 > Linux/Termux(Android)/Git(Windows)这三种平台的使用方法几乎大相径庭，所以下面以 Termux 为例，其它平台如果不会使用可以咨询 AI，因为代码并不复杂，只要有仓库里的核心脚本在，基本上都很简单，Windows 有一点不一样的是换行符长得不一样（CRLF vs LF），可以使用 VS Code 或 Notepad++ 打开 auto.sh，把右下角的换行模式从 CRLF 改成 LF 再保存，自动任务也可以使用 .bat 批处理文件实现。
 
