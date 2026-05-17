@@ -120,21 +120,21 @@ termux-setup-storage
 #
 **运行和查看**：
 
-  - 启动命令：
+启动命令：
 
-    - 本地模式（手动参数）：
+  - 本地模式（手动参数）：
 
 ```bash
 bash ~/cloudflare_ip/auto.sh local
 ```
 
-    - 上传模式（手动参数）：
+  - 上传模式（手动参数）：
 
 ```bash
 bash ~/cloudflare_ip/auto.sh cloud
 ```
 
-    - 直接启动
+  - 直接启动
 
 > 直接启动会根据你文件配置进行启动。
 
