@@ -1,0 +1,89 @@
+# --- 全局运行模式 ---
+# 当直接运行 bash auto.sh 时采用此配置
+# 输入 cloud (测速并同步上传)
+# 输入 local (仅本地测速不同步)
+DEFAULT_MODE="cloud"
+
+# --- 全局功能开关 ---
+# "true" 开启，"false" 关闭
+# 关闭后即便配置了参数也不会运行
+
+# GitHub 仓库上传开关
+USE_GH="true"
+
+# Cloudflare R2 存储上传开关
+USE_R2="true"
+
+# Telegram 通知开关
+USE_TG="true"
+
+# Email 通知开关
+USE_MAIL="true"
+
+# --- 资源地址配置 ---
+INPUT_URL="https://ips.gaoji.uk/ips.txt"
+DOWNLOAD_TIMEOUT=60
+MAX_NODES=1000000
+
+# --- 测速参数 ---
+# 如果不是太懂，保持默认就好
+
+# TCP 延迟测试参数
+TCP_WORKERS=400
+TCP_TIMEOUT=1.5
+
+# 下载测速参数
+SPEED_WORKERS=12
+SPEED_TIMEOUT=6.0
+SPEED_MIN=8.0
+SPEED_PROCESS_BUFFER=16.0
+
+# 每个地区 IP 保留数
+TOP_PER_REGION=10
+
+# --- Cloudflare R2 配置 ---
+CF_ACCOUNT_ID="账户 ID"
+CF_ACCESS_KEY="访问密钥 ID"
+CF_SECRET_KEY="机密访问密钥"
+CF_BUCKET_NAME="存储桶名称"
+
+# --- GitHub 配置 ---
+# 模式选择，推荐 API
+# "api" (走 curl API)
+# "push" (走 Git Push)
+GH_SYNC_MODE="api"
+GH_OWNER="用户名"
+GH_REPO_NAME="仓库名"
+GH_TOKEN="ghp_xxxx..."
+
+# GitHub 域名代理开关
+# "true" 开启代理模式 (GitHub 和 API 都走域名代理)
+# "false" 关闭代理模式 (直连官方 api.github.com 和 github.com)
+GH_USE_PROXY="false"
+GH_PROXY_DOMAIN="代理域名"
+
+# --- Telegram 通知配置 ---
+TG_BOT_TOKEN="机器人 Token"
+TG_CHAT_ID="自己或者频道的 Chat ID"
+
+# Telegram 域名代理开关
+# "true" 开启代理通知 (走域名代理)
+# "false" 关闭代理通知 (直连 api.telegram.org)
+TG_USE_PROXY="true"
+TG_PROXY_DOMAIN="代理域名"
+
+# --- 邮件通知配置 ---
+# 发件服务器，例如QQ邮箱
+MAIL_HOST="smtp.qq.com"
+MAIL_USER="发件箱"
+MAIL_PASS="授权码"
+MAIL_TO="收件箱"
+
+# --- 代理模式选择 ---
+# 是否开启本地端口代理 (如 Clash 端口):
+# "true" 开启，"false" 关闭
+# 💡 注意：开启此项将自动禁用所有域名代理，改走官方直连+本地转发。
+LOCAL_USE_PROXY="false"
+LOCAL_PROXY_ADDR="http://127.0.0.1:7890"
+
+# 💡 注意：配置中不要有多余的空格回车或者符号，有可能会出现意想不到的异常情况。

@@ -15,7 +15,7 @@ SPEED_WORKERS = int(os.getenv("SPEED_WORKERS", 12))
 SPEED_TIMEOUT = float(os.getenv("SPEED_TIMEOUT", 6.0))
 # 引入缓冲区参数，默认为 16.0 秒
 SPEED_PROCESS_BUFFER = float(os.getenv("SPEED_PROCESS_BUFFER", 16.0))
-MIN_SPEED_MBPS = float(os.getenv("MIN_SPEED", 8.0))
+SPEED_MIN_MBPS = float(os.getenv("SPEED_MIN", 8.0))
 
 # 数量控制
 MAX_NODES = int(os.getenv("MAX_NODES", 1000000)) # 默认全量
@@ -24,14 +24,18 @@ TOP_PER_REGION = int(os.getenv("TOP_PER_REGION", 10))
 # 资源与文件配置
 DOWNLOAD_TIMEOUT = float(os.getenv("DOWNLOAD_TIMEOUT", 60.0))
 INPUT_URL = os.getenv("INPUT_URL")
-
 if not INPUT_URL:
-    print("\n" + "!"*40)
     print("❌ 严重错误: 检测到 .env 配置失效或缺少 INPUT_URL！")
     print("💡 为了防止运行偏离预期，程序已自动终止。")
-    print("!"*40 + "\n")
     sys.exit(1)
 
+# === 【唯一新增的容错逻辑】 ===
+# 如果老哥手快少写了协议头，自动在这里原地补齐，确保 urllib 能够解析
+if "://" not in INPUT_URL:
+    INPUT_URL = f"http://{INPUT_URL}"
+# ==============================
+
+# 文件名
 INPUT_FILE = Path("ips.txt")
 BEST_OUTPUT = Path("best_ips.txt")
 FULL_OUTPUT = Path("full_ips.txt")
@@ -125,7 +129,7 @@ async def main():
         candidates.extend(sorted(groups[reg], key=lambda x: x[1])[:TOP_PER_REGION])
 
     # 3. 速度测试
-    print(f"📢 测速阶段：并发{SPEED_WORKERS}, 最低速度{MIN_SPEED_MBPS}Mbps, 目标{len(candidates)}个")
+    print(f"📢 测速阶段：并发{SPEED_WORKERS}, 最低速度{SPEED_MIN_MBPS}Mbps, 目标{len(candidates)}个")
     speed_results = []
     pbar_s = tqdm(total=len(candidates), desc="下载速度测试")
     loop = asyncio.get_event_loop()
@@ -143,7 +147,7 @@ async def main():
     fast_count = 0
     with FULL_OUTPUT.open("w", encoding="utf-8") as f1, BEST_OUTPUT.open("w", encoding="utf-8") as f2:
         for n, lat, s in speed_results:
-            is_fast = s >= MIN_SPEED_MBPS
+            is_fast = s >= SPEED_MIN_MBPS
             tag = FAST_LABEL if is_fast else ""
             line = f"{n.raw} [{tag}{lat}ms {s}Mbps]\n"
             f1.write(line)
@@ -153,11 +157,11 @@ async def main():
 
     duration = int(time.time() - start_time)
     print(f"✨ 优选任务完成！总耗时: {duration}s")
-    print(f"📊 节点总数: {total_nodes}")
+    print(f"📊 IP 总数: {total_nodes}")
     print(f"✅ TCP 存活: {len(tcp_results)} ({round(len(tcp_results)/total_nodes*100, 1)}%)")
     print(f"⚡ 测速候选: {len(candidates)}")
     print(f"🏆 达标优选: {fast_count}")
-    print("✓ 结果已更新")
+    print("⭕ 结果已更新")
 
 if __name__ == "__main__":
     asyncio.run(main())
