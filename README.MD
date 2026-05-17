@@ -120,8 +120,6 @@ termux-setup-storage
 #
 **运行和查看**：
 
-启动命令：
-
   - 本地模式（手动参数）：
 
 ```bash
@@ -156,7 +154,9 @@ nano ~/cloudflare_ip/.env
 bash ~/cloudflare_ip/config.sh
 ```
 
-或者进入目录输入：
+```bash
+或者进入目录输入
+```
 
 ```bash
 bash ./config.sh
