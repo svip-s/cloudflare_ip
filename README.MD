@@ -2,7 +2,7 @@
 
 **测试地**: 中国陕西移动  
 **更新频率**: 下午两点到凌晨两点，每小时更新一次  
-**本次更新**: 2026-05-19 17:31:25
+**本次更新**: 2026-05-19 18:24:15
 
 ## 订阅链接
 **Cloudflare R2 订阅连接（推荐）**：
@@ -442,7 +442,7 @@ TG_CHAT_ID="自己或者频道的 Chat ID"
 
 > 由于测试 IP 时我们需要连接本地网络，但是使用本地网络又无法连接 Telegram，有些地区运营商可能彻底封锁了 GitHub，所以我们要搞代理服务，我们可以使用 VPS 或者 Cloudflare Worker 来搭建一段代码，来实现域名代理。
 
-> 正常情况下，使用 VPS 搭建域名代理比较稳定，Worker 虽然也可以尝试，但是最好只开启一个，两个都使用 Worker 域名代理的方式容易触发 Cloudflare 风险管控，导致异常失败。
+> 最好还是使用 VPS 进行部署或者只用 Workers 代理一个，两个都开启容易被运营商或 CF 风控。其实使用本地端口代理效果最好。
 
 下面以部署 Worker 代码为例。
 
@@ -454,14 +454,34 @@ TG_CHAT_ID="自己或者频道的 Chat ID"
 
 Worker 代码：
 
-  - [GitHub](https://github.com/svip-s/workers_proxy/tree/GitHub)
-
-  - [Telegram](https://github.com/svip-s/workers_proxy/tree/Telegram)
+  - [_worker.js](https://github.com/svip-s/workers_proxy)
 
 4. 部署完成后，绑定一个域名即可。
 
+5. 然后把绑定的域名填入配置文件。
+
+```bash
+nano ~/cloudflare_ip/.env
+```
+
+```bash
+# GitHub 域名代理开关
+# "true" 开启代理模式 (GitHub 和 API 都走域名代理)
+# "false" 关闭代理模式 (直连官方 api.github.com 和 github.com)
+GH_USE_PROXY="true"
+GH_PROXY_DOMAIN="代理域名"
+```
+
+```bash
+# Telegram 域名代理开关
+# "true" 开启代理通知 (走域名代理)
+# "false" 关闭代理通知 (直连 api.telegram.org)
+TG_USE_PROXY="true"
+TG_PROXY_DOMAIN="代理域名"
+```
+
 #
-**本地代理模式（自行判断）**
+**本地端口代理模式（自行判断）**
 
 > 有些人可能没有 VPS，或者懒得部署 Worker，但是大家都肯定有代理软件，我们可以通过本地端口来给脚本实现代理，本地代理开启后将默认关闭域名代理，全部使用本地端口代理，测速和其它功能不受影响，只会代理 GitHub 上传同步和 Telegram 机器人消息推送。
 
