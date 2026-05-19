@@ -35,21 +35,27 @@ fi
 # --- 代理注入与逻辑修正 ---
 UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
+# 强力清空潜在的所有代理变量，后面按需精准注入
+unset ALL_PROXY http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+
 if [ "$LOCAL_USE_PROXY" == "true" ]; then
-    echo "    🌐 [代理注入] 已强制启用本地代理: $LOCAL_PROXY_ADDR"
+    echo "[$(date '+%H:%M:%S')] 🌐 已启用本地代理: $LOCAL_PROXY_ADDR"
     export ALL_PROXY="$LOCAL_PROXY_ADDR"
     export http_proxy="$LOCAL_PROXY_ADDR"
     export https_proxy="$LOCAL_PROXY_ADDR"
+    export HTTP_PROXY="$LOCAL_PROXY_ADDR"
+    export HTTPS_PROXY="$LOCAL_PROXY_ADDR"
+    CURL_PROXY_OPT=(-x "$LOCAL_PROXY_ADDR")
 else
-    unset ALL_PROXY http_proxy https_proxy
+    CURL_PROXY_OPT=()
 fi
 
 # 3. 执行全量测速
 echo "[$(date '+%H:%M:%S')] 优选任务开始..."
 
-# 【监控测速脚本的状态】
+# 彻底封杀大小写代理变量，确保 Python 测速纯直连
 TASK_STATUS="SUCCESS"
-if ! http_proxy="" https_proxy="" ALL_PROXY="" python3 update.py; then
+if ! env -u http_proxy -u https_proxy -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY python3 update.py; then
     echo "❌ 测速脚本异常终止。"
     TASK_STATUS="FAILED"
 else
@@ -62,16 +68,20 @@ if [ "$FINAL_MODE" == "local" ]; then
     exit 0
 fi
 
-# --- 熔断判断：如果测速失败，强行将以下上传模块关闭，但不影响通知 ---
+if [ "$TASK_STATUS" != "FAILED" ]; then
+    sleep 2
+fi
+
+# --- 熔断判断 ---
 if [ "$TASK_STATUS" == "FAILED" ]; then
     echo -e "\033[1;31m🚨 警告: 检测到测速核心崩溃！已触发安全熔断，跳过所有云端上传。\033[0m"
     R2_MSG="❌ 测速失败·熔断跳过"
     GH_MSG="❌ 测速失败·熔断跳过"
 else
-    # 4. Cloudflare R2 存储上传模块 (仅在测速成功时运行)
+    # 4. Cloudflare R2 存储上传模块
     if [ "$USE_R2" == "true" ]; then
         echo "[$(date '+%H:%M:%S')] ☁️ 上传至 Cloudflare R2 存储..."
-        R2_STATUS=$(python3 <<EOF
+        R2_STATUS=$(env -u http_proxy -u https_proxy -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY python3 <<EOF
 import boto3, os
 try:
     s3 = boto3.client('s3', 
@@ -85,13 +95,19 @@ except Exception as e:
     print(f"FAILED: {e}")
 EOF
 )
-        [[ "$R2_STATUS" == "SUCCESS" ]] && R2_MSG="✅ 成功" || R2_MSG="❌ 失败 ($R2_STATUS)"
+        if [[ "$R2_STATUS" == "SUCCESS" ]]; then
+            R2_MSG="✅ 成功"
+        else
+            R2_MSG="❌ 失败"
+            echo -e "\033[1;31m    └─ R2 核心报错回执:\033[0m"
+            echo "      ${R2_STATUS}"
+        fi
         echo "    └─ $R2_MSG"
     else
         R2_MSG="🚫 已禁用"
     fi
 
-    # 5. GitHub 仓库上传模块 (仅在测速成功时运行)
+    # 5. GitHub 仓库上传模块
     if [ "$USE_GH" == "true" ]; then
         echo "[$(date '+%H:%M:%S')] 🐙 上传至 GitHub 仓库..."
         REPO_OWNER="$GH_OWNER"
@@ -99,26 +115,53 @@ EOF
         TOP_IP=$(head -n 1 best_ips.txt | awk '{print $1}')
 
         if [ "$GH_SYNC_MODE" == "push" ]; then
+            git config user.email "bot@localhost"
+            git config user.name "Automated Bot"
+            
             [ "$GH_USE_PROXY" == "true" ] && FINAL_GH_HOST="$GH_PROXY_DOMAIN" || FINAL_GH_HOST="github.com"
-            PUSH_URL="https://${GH_TOKEN}@${FINAL_GH_HOST}/${REPO_OWNER}/${REPO_NAME}.git"
-            git add .
-            git commit -m "Update IPs: $TOP_IP" || echo "    💡 无变动"
-            git push "$PUSH_URL" main --force && GH_MSG="✅ 成功 (Push)" || GH_MSG="❌ 失败 (Push)"
+            PUSH_URL="https://${GH_TOKEN}:@${FINAL_GH_HOST}/${REPO_OWNER}/${REPO_NAME}.git"
+            
+            git add README.MD best_ips.txt full_ips.txt
+            git commit -m "Update IPs: $TOP_IP [$(date '+%Y-%m-%d %H:%M:%S')]" >/dev/null 2>&1 || echo "    💡 无变动"
+            
+            # ⏳ 限定 10 秒强杀
+            PUSH_LOG=$(timeout 10 git push "$PUSH_URL" main --force 2>&1)
+            if [ $? -eq 0 ]; then
+                GH_MSG="✅ 成功 (Push)"
+            else
+                GH_MSG="❌ 失败 (Push)"
+                echo -e "\033[1;31m    └─ 详细 Push 报错日志如下:\033[0m"
+                echo "$PUSH_LOG" | sed 's/^/      /'
+            fi
         else
             [ "$GH_USE_PROXY" == "true" ] && API_DOMAIN="$GH_PROXY_DOMAIN" || API_DOMAIN="api.github.com"
             GH_SUCCESS=true
             FILES=("best_ips.txt" "full_ips.txt" "README.MD")
+            API_ERR_LOG=""
+            
             for FILE in "${FILES[@]}"; do
                 [ ! -f "$FILE" ] && continue
                 API_BASE="https://$API_DOMAIN/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE"
-                SHA=$(curl -s -L -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "User-Agent: $UA" "$API_BASE" | grep '"sha":' | head -n 1 | cut -d'"' -f4)
+                SHA=$(curl "${CURL_PROXY_OPT[@]}" -s -L -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "User-Agent: $UA" "$API_BASE" | grep '"sha":' | head -n 1 | cut -d'"' -f4)
                 CONTENT=$(base64 -w 0 "$FILE")
                 SHA_FIELD=""
                 [ -n "$SHA" ] && SHA_FIELD="\"sha\": \"$SHA\","
-                RESPONSE=$(curl -s -X PUT -H "Authorization: token $GH_TOKEN" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" -H "User-Agent: $UA" -d "{$SHA_FIELD \"message\": \"Update $FILE: $TOP_IP\", \"content\": \"$CONTENT\"}" "$API_BASE")
-                [[ "$RESPONSE" == *"\"content\":"* ]] || GH_SUCCESS=false
+                
+                RESPONSE=$(curl "${CURL_PROXY_OPT[@]}" -s --connect-timeout 10 -X PUT -H "Authorization: token $GH_TOKEN" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" -H "User-Agent: $UA" -d "{$SHA_FIELD \"message\": \"Update $FILE: $TOP_IP\", \"content\": \"$CONTENT\"}" "$API_BASE")
+                
+                if [[ "$RESPONSE" != *"\"content\":"* ]]; then
+                    GH_SUCCESS=false
+                    API_ERR_LOG="$API_ERR_LOG\n      [${FILE}]: $RESPONSE"
+                fi
             done
-            $GH_SUCCESS && GH_MSG="✅ 成功 (API)" || GH_MSG="❌ 失败 (API)"
+            
+            if $GH_SUCCESS; then
+                GH_MSG="✅ 成功 (API)"
+            else
+                GH_MSG="❌ 失败 (API)"
+                echo -e "\033[1;31m    └─ 详细 API 报错回执如下:\033[0m"
+                echo -e "$API_ERR_LOG"
+            fi
         fi
         echo "    └─ $GH_MSG"
     else
@@ -126,9 +169,13 @@ EOF
     fi
 fi
 
+if [ "$USE_GH" == "true" ] && [ "$USE_TG" == "true" ]; then
+    sleep 3
+fi
+
 # 6. 智能推送中心
 
-# --- 构造核心战报内容 ---
+# --- 构造战报内容 ---
 if [ "$TASK_STATUS" == "FAILED" ]; then
     MAIL_TAG="崩溃"
     MSG_TEXT="<b>🚨 优选任务崩溃警报</b>
@@ -164,55 +211,61 @@ if [ "$USE_TG" == "true" ]; then
     echo "[$(date '+%H:%M:%S')] 📢 正在发送 Telegram 战报..."
     [ "$TG_USE_PROXY" == "true" ] && TG_API_HOST="$TG_PROXY_DOMAIN" || TG_API_HOST="api.telegram.org"
     
-    TG_RES=$(curl -s -X POST "https://$TG_API_HOST/bot$TG_BOT_TOKEN/sendMessage" \
+    TG_RES=$(curl "${CURL_PROXY_OPT[@]}" -s -X POST "https://$TG_API_HOST/bot$TG_BOT_TOKEN/sendMessage" \
          -H "User-Agent: $UA" \
-         --connect-timeout 10 --retry 2 \
+         --connect-timeout 5 --retry 1 \
          -d "chat_id=$TG_CHAT_ID" -d "parse_mode=HTML" \
          --data-urlencode "text=$MSG_TEXT")
 
-    [[ "$TG_RES" == *"\"ok\":true"* ]] && echo "    └─ ✅ Telegram 战报已发送" || echo "    └─ ❌ Telegram 发送失败: $TG_RES"
+    if [[ "$TG_RES" == *"\"ok\":true"* ]]; then
+        echo "    └─ ✅ Telegram 战报已发送"
+    else
+        echo "    └─ ❌ Telegram 发送失败"
+        echo -e "\033[1;31m    └─ TG 接口错误响应:\033[0m"
+        [ -z "$TG_RES" ] && echo "      [提示] 没有任何响应主体 (可能是本地大网直连被断流阻斷)" || echo "      $TG_RES"
+    fi
 else
     echo "[$(date '+%H:%M:%S')] 📢 Telegram 通知已关闭，跳过。"
+fi
+
+if [ "$USE_TG" == "true" ] && [ "$USE_MAIL" == "true" ]; then
+    sleep 2
 fi
 
 # --- Email 推送逻辑 ---
 if [ "$USE_MAIL" == "true" ]; then
     echo "[$(date '+%H:%M:%S')] 📧 正在发送 Email 战报..."
     
-    python3 - <<EOF
-import smtplib
+    export PURIFIED_MSG_TEXT="$MSG_TEXT"
+    env -u http_proxy -u https_proxy -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY python3 - <<EOF
+import smtplib, os
 from email.mime.text import MIMEText
 from email.header import Header
 
 def send_mail():
     mail_host, mail_user, mail_pass, mail_to = "$MAIL_HOST", "$MAIL_USER", "$MAIL_PASS", "$MAIL_TO"
-
-    raw_content = """$MSG_TEXT"""
+    raw_content = os.environ.get("PURIFIED_MSG_TEXT", "")
     html_body = raw_content.replace('\n', '<br>') + "<br><br><small style='color:gray;'>-- 由优选 IP 自动化脚本发送</small>"
     
     message = MIMEText(html_body, 'html', 'utf-8')
-    
-    # === 只对纯文本昵称进行 Header 编码，后面的邮箱地址保留原生字符串 ===
-    from_nickname = Header("Cloudflare IP Robot", 'utf-8').encode()
-    message['From'] = f"{from_nickname} <{mail_user}>"
-    
-    to_nickname = Header("Master", 'utf-8').encode()
-    message['To'] = f"{to_nickname} <{mail_to}>"
-    
-    message['Subject'] = Header(f"🚀 IP优选战报", 'utf-8')
+    message['From'] = f"{Header('Cloudflare IP Robot', 'utf-8').encode()} <{mail_user}>"
+    message['To'] = f"{Header('Master', 'utf-8').encode()} <{mail_to}>"
+    message['Subject'] = Header(f"🚀 IP 优选战报", 'utf-8')
 
     try:
-        smtpObj = smtplib.SMTP_SSL(mail_host, 465)
+        smtpObj = smtplib.SMTP_SSL(mail_host, 465, timeout=15)
         smtpObj.login(mail_user, mail_pass)
         smtpObj.sendmail(mail_user, [mail_to], message.as_string())
         smtpObj.quit()
         print("    └─ ✅ Email 战报已发送")
     except Exception as e:
-        print(f"    └─ ❌ Email 发送失败: {e}")
+        print("    └─ ❌ Email 发送失败")
+        print(f"\033[1;31m    └─ 邮件网关异常详情: {e}\033[0m")
 
 if __name__ == "__main__":
     send_mail()
 EOF
+    unset PURIFIED_MSG_TEXT
 else
     echo "[$(date '+%H:%M:%S')] 📧 Email 通知已关闭，跳过。"
 fi

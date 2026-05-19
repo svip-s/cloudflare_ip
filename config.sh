@@ -14,12 +14,7 @@ update_env() {
         fi
     fi
 
-    # 针对普通变量强制转小写，针对 URL/代理/密码 保持原始大小写
-    if [[ "$key" != "INPUT_URL" && "$key" != "LOCAL_PROXY_ADDR" && "$key" != "MAIL_PASS" ]]; then
-        final_val=$(echo "$value" | tr 'A-Z' 'a-z')
-    else
-        final_val="$value"
-    fi
+    final_val="$value"
     
     python3 - <<EOF
 import os
